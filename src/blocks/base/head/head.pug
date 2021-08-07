@@ -1,0 +1,24 @@
+block vars
+
+- var hash = new Date().getTime().toString(16);
+- var projectName = 'Room';
+
+mixin head
+  head
+    meta(http-equiv="Content-Type", content="text/html; charset=utf-8")
+    meta(http-equiv="X-UA-Compatible", content="IE=edge")
+    meta(content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0', name='viewport')
+    meta(content="telephone=no", name="format-detection")
+
+    meta(property="og:url", content="")
+    meta(property="og:type", content="website")
+    meta(property="og:title", content="")
+    meta(property="og:description", content="")
+    meta(property="og:image", content="")
+
+    link(rel="shortcut icon", type="image/x-icon", href="favicon/favicon.ico")
+
+    title= title ? projectName + ' - ' + title : ''
+
+    link(rel="stylesheet", href="css/" + page + ".css?ver=" + hash)
+    script(src="js/" + page + ".js?ver=" + hash, async, defer)
