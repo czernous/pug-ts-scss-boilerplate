@@ -104,7 +104,8 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
           test: /\.(jpg|jpeg|png|gif|mp3|svg)$/,
           type: 'asset/resource',
           generator: {
-            filename: '/img/[name].[ext]',
+            filename: '[path][name].[ext]',
+            publicPath: '../',
           },
         },
       ],
@@ -158,6 +159,8 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
 
       new StylelintPlugin({
         emitError: true,
+        threads: true,
+        lintDirtyModulesOnly: true,
       }),
 
       new MiniCssExtractPlugin({
