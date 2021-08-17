@@ -1,21 +1,28 @@
+/* eslint-disable global-require */
 /* eslint-disable import/no-extraneous-dependencies */
-
 import * as webpack from 'webpack';
 import { Configuration as WebpackConfiguration } from 'webpack';
 import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
 import fs from 'fs';
 import path from 'path';
+import babelLoaderExcludeNodeModulesExcept from 'babel-loader-exclude-node-modules-except';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import ESLintPlugin from 'eslint-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import StylelintPlugin from 'stylelint-webpack-plugin';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import CompressionPlugin from 'compression-webpack-plugin';
 import chokidar from 'chokidar';
+
 import pugData from './src/utils/generatePugData';
 
 interface Configuration extends WebpackConfiguration {
   devServer?: WebpackDevServerConfiguration;
 }
+// const smp = new SpeedMeasurePlugin();
+
+const mode = process.env.NODE_ENV || 'development';
+const dist = './dist';
 
 function generateJadePlugins(templateDir: string) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
@@ -32,9 +39,10 @@ function generateJadePlugins(templateDir: string) {
 
 const jadePlugins = generateJadePlugins('./src/pages');
 
-const createConfig = (env: any, { mode = 'development' }): Configuration => {
+const createConfig = (env: any, options: any): Configuration => {
   const config: Configuration = {
-    target: 'web',
+    // target: 'web',
+    // name: 'browser',
     // @ts-ignore
     mode,
     context: path.resolve(__dirname, 'src'),
@@ -44,18 +52,14 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
     module: {
       rules: [
         {
-          test: /\.(m?js|ts)$/,
-          exclude: /node_modules/,
+          test: /\.(m?js|ts|tsx)$/,
+          exclude: babelLoaderExcludeNodeModulesExcept([
+            // es6 modules from node_modules/
+            'swiper',
+            'dom7',
+          ]),
           use: {
             loader: 'babel-loader',
-            options: {
-              presets: ['@babel/preset-env', '@babel/preset-typescript'],
-              plugins: [
-                '@babel/plugin-transform-runtime',
-                '@babel/plugin-proposal-class-properties',
-                '@babel/plugin-proposal-object-rest-spread',
-              ],
-            },
           },
         },
         {
@@ -72,9 +76,6 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
             },
             {
               loader: 'postcss-loader',
-              options: {
-                sourceMap: true,
-              },
             },
             {
               loader: 'sass-loader',
@@ -88,20 +89,32 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
         },
         {
           test: /\.pug$/,
-          type: 'asset/source',
-          use: [
-            {
-              loader: 'pug-html-loader',
-              options: {
-                pretty: true,
-                indent: 2,
-                data: { ...pugData },
-              },
-            },
-          ],
+              type: 'asset/source',
+              use: [
+                {
+                  loader: 'pug-html-loader',
+                  options: {
+                    pretty: true,
+                    indent: 2,
+                    data: { ...pugData },
+                  },
+                },
+              ],
+
         },
+        // img
         {
-          test: /\.(jpg|jpeg|png|gif|mp3|svg)$/,
+          test: /\.(jpe?g|png|gif|svg)$/,
+          type: 'asset/resource',
+          generator: {
+            filename: '[path][name].[ext]',
+            publicPath: '../',
+          },
+        },
+
+        // fonts
+        {
+          test: /\.(woff|woff2|eot|ttf)$/,
           type: 'asset/resource',
           generator: {
             filename: '[path][name].[ext]',
@@ -111,37 +124,40 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
       ],
     },
     resolve: {
-      extensions: ['.js', '.jsx', '.ts', '.tsx', '.css', '.scss', '.pug'],
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.pug'],
+      alias: {
+        vue: 'vue/dist/vue.esm-bundler.js',
+        blocks: path.resolve(__dirname, './blocks'),
+      },
     },
     output: {
-      path: path.resolve(__dirname, 'dist'),
+      path: path.resolve(__dirname, dist),
       filename: './js/[name].js',
     },
     optimization: {
       mangleWasmImports: true,
       mergeDuplicateChunks: true,
       minimize: true,
+      minimizer: [
+        (compiler) => ({
+          sourceMap: true,
+          parallel: true,
+          cache: true,
+          extractComments: true,
+          terserOptions: {
+            ecma: 5,
+            ie8: false,
+            compress: true,
+            warnings: true,
+          },
+        }),
+      ],
+
+      moduleIds: 'deterministic',
       nodeEnv: 'production',
     },
+
     plugins: [
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': '"production"',
-      }),
-      new webpack.HotModuleReplacementPlugin(),
-    ],
-  };
-  /**
-   * If in development mode adjust the config accordingly
-   */
-  if (mode === 'development') {
-    config.devtool = 'source-map';
-    config!.module!.rules!.push({
-      loader: 'source-map-loader',
-      test: /\.js$/,
-      exclude: /node_modules/,
-      enforce: 'pre',
-    });
-    config.plugins = [
       new ESLintPlugin({
         emitError: true,
         extensions: ['js', 'ts'],
@@ -150,7 +166,7 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
       new CopyPlugin({
         patterns: [
           { from: './img', to: 'img' },
-          { from: './common/sprite.svg', to: 'svg' },
+          { from: './common/sprite.svg', to: 'icons' },
           { from: './video', to: 'video' },
           { from: './favicon', to: 'favicon' },
           { from: './json', to: 'json' },
@@ -161,18 +177,45 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
         emitError: true,
         threads: true,
         lintDirtyModulesOnly: true,
+        exclude: './src/scss',
       }),
 
       new MiniCssExtractPlugin({
         filename: './css/[name].css',
       }),
+    ].concat(jadePlugins),
+  };
 
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': '"development"',
-      }),
+  if (mode === 'production') {
+    config!.plugins!.push(
+      new CompressionPlugin({
+        filename: '[path][name].br[query]',
+        algorithm: 'brotliCompress',
+        test: /\.(js|ts|vue)$/,
+        compressionOptions: { level: 11 },
+        threshold: 10240,
+        minRatio: 0.8,
+        deleteOriginalAssets: false,
+      })
+    );
+    config!.stats = {
+      preset: 'detailed',
+      modules: false,
+      orphanModules: false,
+      entrypoints: false,
+      children: true,
+    };
+  }
 
-      new webpack.HotModuleReplacementPlugin(),
-    ].concat(jadePlugins);
+  if (mode === 'development') {
+    config.devtool = 'source-map';
+    config!.module!.rules!.push({
+      loader: 'source-map-loader',
+      test: /\.js$/,
+      exclude: /node_modules/,
+      enforce: 'pre',
+    });
+
     config.devServer = {
       contentBase: path.resolve(__dirname, 'dist'),
       compress: true,
@@ -195,7 +238,7 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
         chunks: false,
         modules: false,
         reasons: false,
-        children: false,
+        children: true,
         source: false,
         errors: true,
         errorDetails: true,
@@ -211,10 +254,11 @@ const createConfig = (env: any, { mode = 'development' }): Configuration => {
     config.optimization = {
       mangleWasmImports: true,
       mergeDuplicateChunks: true,
-      minimize: false,
+      minimize: true,
       nodeEnv: 'development',
     };
   }
+
   return config;
 };
 
