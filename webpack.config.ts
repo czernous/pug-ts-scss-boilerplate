@@ -1,33 +1,33 @@
 /* eslint-disable global-require */
 /* eslint-disable import/no-extraneous-dependencies */
-import * as webpack from 'webpack';
-import { Configuration as WebpackConfiguration } from 'webpack';
-import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
-import fs from 'fs';
-import path from 'path';
-import babelLoaderExcludeNodeModulesExcept from 'babel-loader-exclude-node-modules-except';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import ESLintPlugin from 'eslint-webpack-plugin';
-import CopyPlugin from 'copy-webpack-plugin';
-import StylelintPlugin from 'stylelint-webpack-plugin';
-import CompressionPlugin from 'compression-webpack-plugin';
-import chokidar from 'chokidar';
+import * as webpack from "webpack";
+import { Configuration as WebpackConfiguration } from "webpack";
+import { Configuration as WebpackDevServerConfiguration } from "webpack-dev-server";
+import fs from "fs";
+import path from "path";
+import babelLoaderExcludeNodeModulesExcept from "babel-loader-exclude-node-modules-except";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import ESLintPlugin from "eslint-webpack-plugin";
+import CopyPlugin from "copy-webpack-plugin";
+import StylelintPlugin from "stylelint-webpack-plugin";
+import CompressionPlugin from "compression-webpack-plugin";
+import chokidar from "chokidar";
 
-import pugData from './src/utils/generatePugData';
+import pugData from "./src/utils/generatePugData";
 
 interface Configuration extends WebpackConfiguration {
   devServer?: WebpackDevServerConfiguration;
 }
 // const smp = new SpeedMeasurePlugin();
 
-const mode = process.env.NODE_ENV || 'development';
-const dist = './dist';
+const mode = process.env.NODE_ENV || "development";
+const dist = "./dist";
 
 function generateJadePlugins(templateDir: string) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
   return templateFiles.map((item: string) => {
-    const parts = item.split('.');
+    const parts = item.split(".");
     const name = parts[0];
     return new HtmlWebpackPlugin({
       filename: `${name}.html`,
@@ -37,7 +37,7 @@ function generateJadePlugins(templateDir: string) {
   });
 }
 
-const jadePlugins = generateJadePlugins('./src/pages');
+const jadePlugins = generateJadePlugins("./src/pages");
 
 const createConfig = (env: any, options: any): Configuration => {
   const config: Configuration = {
@@ -45,9 +45,9 @@ const createConfig = (env: any, options: any): Configuration => {
     // name: 'browser',
     // @ts-ignore
     mode,
-    context: path.resolve(__dirname, 'src'),
+    context: path.resolve(__dirname, "src"),
     entry: {
-      index: ['./pages/index/index.ts', './pages/index/index.scss'],
+      index: ["./pages/index/index.ts", "./pages/index/index.scss"],
     },
     module: {
       rules: [
@@ -55,30 +55,30 @@ const createConfig = (env: any, options: any): Configuration => {
           test: /\.(m?js|ts|tsx)$/,
           exclude: babelLoaderExcludeNodeModulesExcept([
             // es6 modules from node_modules/
-            'swiper',
-            'dom7',
+            "swiper",
+            "dom7",
           ]),
           use: {
-            loader: 'babel-loader',
+            loader: "babel-loader",
           },
         },
         {
           test: /\.s[ac]ss$/i,
           use: [
-            process.env.NODE_ENV !== 'production'
-              ? 'style-loader'
+            process.env.NODE_ENV !== "production"
+              ? "style-loader"
               : MiniCssExtractPlugin.loader,
             {
-              loader: 'css-loader',
+              loader: "css-loader",
               options: {
                 sourceMap: true,
               },
             },
             {
-              loader: 'postcss-loader',
+              loader: "postcss-loader",
             },
             {
-              loader: 'sass-loader',
+              loader: "sass-loader",
               options: {
                 sassOptions: {
                   sourceMap: true,
@@ -89,50 +89,49 @@ const createConfig = (env: any, options: any): Configuration => {
         },
         {
           test: /\.pug$/,
-              type: 'asset/source',
-              use: [
-                {
-                  loader: 'pug-html-loader',
-                  options: {
-                    pretty: true,
-                    indent: 2,
-                    data: { ...pugData },
-                  },
-                },
-              ],
-
+          type: "asset/source",
+          use: [
+            {
+              loader: "pug-html-loader",
+              options: {
+                pretty: true,
+                indent: 2,
+                data: { ...pugData },
+              },
+            },
+          ],
         },
         // img
         {
           test: /\.(jpe?g|png|gif|svg)$/,
-          type: 'asset/resource',
+          type: "asset/resource",
           generator: {
-            filename: '[path][name].[ext]',
-            publicPath: '../',
+            filename: "[path][name].[ext]",
+            publicPath: "../",
           },
         },
 
         // fonts
         {
           test: /\.(woff|woff2|eot|ttf)$/,
-          type: 'asset/resource',
+          type: "asset/resource",
           generator: {
-            filename: '[path][name].[ext]',
-            publicPath: '../',
+            filename: "[path][name].[ext]",
+            publicPath: "../",
           },
         },
       ],
     },
     resolve: {
-      extensions: ['.js', '.jsx', '.ts', '.tsx', '.pug'],
+      extensions: [".js", ".jsx", ".ts", ".tsx", ".pug"],
       alias: {
-        vue: 'vue/dist/vue.esm-bundler.js',
-        blocks: path.resolve(__dirname, './blocks'),
+        vue: "vue/dist/vue.esm-bundler.js",
+        blocks: path.resolve(__dirname, "./blocks"),
       },
     },
     output: {
       path: path.resolve(__dirname, dist),
-      filename: './js/[name].js',
+      filename: "./js/[name].js",
     },
     optimization: {
       mangleWasmImports: true,
@@ -153,23 +152,23 @@ const createConfig = (env: any, options: any): Configuration => {
         }),
       ],
 
-      moduleIds: 'deterministic',
-      nodeEnv: 'production',
+      moduleIds: "deterministic",
+      nodeEnv: "production",
     },
 
     plugins: [
       new ESLintPlugin({
         emitError: true,
-        extensions: ['js', 'ts'],
+        extensions: ["js", "ts"],
       }),
 
       new CopyPlugin({
         patterns: [
-          { from: './img', to: 'img' },
-          { from: './common/sprite.svg', to: 'icons' },
-          { from: './video', to: 'video' },
-          { from: './favicon', to: 'favicon' },
-          { from: './json', to: 'json' },
+          { from: "./img", to: "img" },
+          { from: "./common/sprite.svg", to: "icons" },
+          { from: "./video", to: "video" },
+          { from: "./favicon", to: "favicon" },
+          { from: "./json", to: "json" },
         ],
       }),
 
@@ -177,20 +176,20 @@ const createConfig = (env: any, options: any): Configuration => {
         emitError: true,
         threads: true,
         lintDirtyModulesOnly: true,
-        exclude: './src/scss',
+        exclude: "./src/scss",
       }),
 
       new MiniCssExtractPlugin({
-        filename: './css/[name].css',
+        filename: "./css/[name].css",
       }),
     ].concat(jadePlugins),
   };
 
-  if (mode === 'production') {
+  if (mode === "production") {
     config!.plugins!.push(
       new CompressionPlugin({
-        filename: '[path][name].br[query]',
-        algorithm: 'brotliCompress',
+        filename: "[path][name].br[query]",
+        algorithm: "brotliCompress",
         test: /\.(js|ts|vue)$/,
         compressionOptions: { level: 11 },
         threshold: 10240,
@@ -199,7 +198,7 @@ const createConfig = (env: any, options: any): Configuration => {
       })
     );
     config!.stats = {
-      preset: 'detailed',
+      preset: "detailed",
       modules: false,
       orphanModules: false,
       entrypoints: false,
@@ -207,20 +206,20 @@ const createConfig = (env: any, options: any): Configuration => {
     };
   }
 
-  if (mode === 'development') {
-    config.devtool = 'source-map';
+  if (mode === "development") {
+    config.devtool = "source-map";
     config!.module!.rules!.push({
-      loader: 'source-map-loader',
+      loader: "source-map-loader",
       test: /\.js$/,
       exclude: /node_modules/,
-      enforce: 'pre',
+      enforce: "pre",
     });
 
     config.devServer = {
-      contentBase: path.resolve(__dirname, 'dist'),
+      contentBase: path.resolve(__dirname, "dist"),
       compress: true,
       port: 3000,
-      publicPath: '/',
+      publicPath: "/",
       hot: true,
       hotOnly: true,
       open: true,
@@ -246,8 +245,8 @@ const createConfig = (env: any, options: any): Configuration => {
         publicPath: false,
       },
       before(app, server) {
-        chokidar.watch(['./src/pages/**/*.pug']).on('all', () => {
-          server.sockWrite(server.sockets, 'content-changed');
+        chokidar.watch(["./src/pages/**/*.pug"]).on("all", () => {
+          server.sockWrite(server.sockets, "content-changed");
         });
       },
     };
@@ -255,7 +254,7 @@ const createConfig = (env: any, options: any): Configuration => {
       mangleWasmImports: true,
       mergeDuplicateChunks: true,
       minimize: true,
-      nodeEnv: 'development',
+      nodeEnv: "development",
     };
   }
 
